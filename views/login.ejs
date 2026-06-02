@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin · Nortend</title>
+<link rel="icon" href="/assets/logo-nortend.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <img src="/assets/logo-nortend.png" alt="Nortend" class="login-logo" />
+    <div class="login-eyebrow">Painel de administração</div>
+    <h1>Acesso restrito</h1>
+    <% if (error) { %><div class="alert err"><%= error %></div><% } %>
+    <form method="post" action="/admin/login" autocomplete="off">
+      <label for="username">Usuário</label>
+      <input type="text" id="username" name="username" required value="<%= (typeof username !== 'undefined' && username) ? username : '' %>" />
+      <label for="password">Senha</label>
+      <input type="password" id="password" name="password" required autofocus />
+      <button type="submit" class="btn primary block">Entrar →</button>
+    </form>
+    <a href="/" class="back-link">← Voltar ao site</a>
+  </main>
+</body>
+</html>

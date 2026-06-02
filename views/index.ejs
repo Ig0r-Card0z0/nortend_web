@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title><%= c.seo.title %></title>
+<meta name="description" content="<%= c.seo.description %>" />
+<meta property="og:title" content="<%= c.seo.title %>" />
+<meta property="og:description" content="<%= c.seo.description %>" />
+<meta property="og:type" content="website" />
+<% if (c.seo.ogImage) { %><meta property="og:image" content="<%= c.seo.ogImage %>" /><% } %>
+<link rel="icon" href="/assets/logo-nortend.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+
+  <!-- Top utility bar -->
+  <div class="topbar">
+    <div class="wrap">
+      <div class="left">
+        <span><span class="dot"></span><%= c.topbar.availability %></span>
+        <span class="sep" style="opacity:.4">|</span>
+        <span><%= c.topbar.credential %></span>
+      </div>
+      <div class="right" style="display:flex; gap:20px;">
+        <% if (c.topbar.langLabel) { %><a href="<%= c.topbar.langUrl || '#' %>"><%= c.topbar.langLabel %></a><% } %>
+        <a href="<%= href(c.topbar.clientAreaUrl, c) %>"><%= c.topbar.clientAreaLabel %></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary nav -->
+  <nav class="primary">
+    <div class="wrap">
+      <a class="brand" href="#" aria-label="NORTEND Engenharia e Inspeção">
+        <img class="logo" src="/assets/logo-nortend.png" alt="NORTEND — Engenharia e Inspeção" style="width: 140px;" />
+      </a>
+      <input type="checkbox" id="navToggle" class="nav-toggle" hidden />
+      <div class="nav-links">
+        <% c.nav.links.forEach(function(link){ %>
+          <a href="<%= href(link.href, c) %>"><%= link.label %></a>
+        <% }); %>
+      </div>
+      <div class="nav-actions">
+        <a class="btn ghost" href="<%= href(c.nav.ctaGhost.href, c) %>"><%= c.nav.ctaGhost.label %></a>
+        <a class="btn primary" href="<%= href(c.nav.ctaPrimary.href, c) %>"><span class="label-full"><%= c.nav.ctaPrimary.label %></span> <span class="arrow">→</span></a>
+        <label for="navToggle" class="burger" aria-label="Abrir menu"><span></span><span></span><span></span></label>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow"><span class="bar"></span><%= c.hero.eyebrow %></div>
+        <h1 class="hero-title"><%- emph(c.hero.title) %></h1>
+        <p class="hero-lede"><%= c.hero.lede %></p>
+        <div class="hero-cta">
+          <a class="btn primary" href="<%= href(c.hero.ctaPrimary.href, c) %>"><%= c.hero.ctaPrimary.label %> <span class="arrow">→</span></a>
+          <a class="btn" href="<%= href(c.hero.ctaSecondary.href, c) %>"><%= c.hero.ctaSecondary.label %></a>
+        </div>
+        <div class="hero-specs">
+          <% c.hero.specs.forEach(function(s){ %>
+            <div class="spec"><div class="k"><%= s.k %></div><div class="v"><%= s.v %></div></div>
+          <% }); %>
+        </div>
+      </div>
+
+      <aside class="hero-visual" aria-hidden="true">
+        <div class="hero-img" style="background-image: url('<%= c.hero.image %>');"></div>
+        <div class="hero-overlay">
+          <div class="hero-overlay-head">
+            <span class="id"><%= c.hero.card.id %></span>
+            <span class="stamp"><%= c.hero.card.stamp %></span>
+          </div>
+          <h3><%= c.hero.card.title %></h3>
+          <ul class="checklist">
+            <% c.hero.card.items.forEach(function(it){ %>
+              <li><span class="chk <%= it.on ? 'on' : '' %>"><%= it.on ? '✓' : '!' %></span><%= it.text %><span class="code"><%= it.code %></span></li>
+            <% }); %>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <!-- Trust strip -->
+  <div class="strip">
+    <div class="row">
+      <% c.trustStrip.forEach(function(item, i){ %>
+        <span><%= item %></span><% if (i < c.trustStrip.length - 1) { %><span class="dot"></span><% } %>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <section id="numeros">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.metricsSection.label %></div>
+          <h2><%= c.metricsSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.metricsSection.intro %></p>
+      </div>
+      <div class="metrics">
+        <% c.metrics.forEach(function(m){ %>
+          <div class="metric">
+            <div class="n"><%= m.n %><% if (m.sup) { %><sup><%= m.sup %></sup><% } %></div>
+            <div class="l"><%= m.l %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="servicos" class="services">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.servicesSection.label %></div>
+          <h2><%= c.servicesSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.servicesSection.intro %></p>
+      </div>
+      <div class="svc-grid">
+        <% c.services.forEach(function(svc){ %>
+          <article class="svc">
+            <div class="svc-img" style="background-image: url('<%= svc.image %>');"></div>
+            <div class="svc-body">
+              <div class="code"><%= svc.code %></div>
+              <h3><%= svc.title %></h3>
+              <p><%= svc.text %></p>
+              <% if (svc.more) { %><a class="more" href="<%= href(svc.href || '#', c) %>"><%= svc.more %></a><% } %>
+            </div>
+          </article>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- FIELD / FULL-BLEED -->
+  <section class="field-section" aria-label="Em campo">
+    <div class="field-bleed" style="background-image: url('<%= c.field.image %>');">
+      <div class="field-content">
+        <div class="inner">
+          <div class="label"><span class="bar"></span><%= c.field.label %></div>
+          <h2><%- emph(c.field.title) %></h2>
+          <p><%= c.field.text %></p>
+          <div class="field-stats">
+            <% c.field.stats.forEach(function(s){ %>
+              <div class="stat"><div class="k"><%= s.k %></div><div class="v"><%= s.v %></div></div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section id="processo" class="process">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.processSection.label %></div>
+          <h2><%= c.processSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.processSection.intro %></p>
+      </div>
+      <div class="grid">
+        <% c.process.forEach(function(step){ %>
+          <div class="step">
+            <span class="num"><%= step.num %></span>
+            <h4><%= step.title %></h4>
+            <p><%= step.text %></p>
+            <div class="deliver">Entregável<strong><%= step.deliver %></strong></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIFFERENTIALS -->
+  <section class="diff">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.diffSection.label %></div>
+          <h2><%= c.diffSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.diffSection.intro %></p>
+      </div>
+      <div class="list">
+        <% c.differentials.forEach(function(d){ %>
+          <div class="item">
+            <span class="k"><%= d.k %></span>
+            <h4><%= d.title %></h4>
+            <p><%= d.text %></p>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section id="clientes" class="proof">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.proofSection.label %></div>
+          <h2><%= c.proofSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.proofSection.intro %></p>
+      </div>
+      <div class="quote-row">
+        <blockquote class="q">
+          <%= c.proof.quote %>
+          <footer><span class="bar"></span><%= c.proof.attribution %></footer>
+        </blockquote>
+        <div class="logos" aria-label="Logos de clientes">
+          <% c.proof.logos.forEach(function(logo){ %>
+            <div class="cell">
+              <% if (logo.type === 'image' && logo.img) { %>
+                <img src="<%= logo.img %>" alt="Logo de cliente" />
+              <% } else { %>
+                <%= logo.value %>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOG -->
+  <section id="blog" class="blog">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <div class="label"><%= c.blogSection.label %></div>
+          <h2><%= c.blogSection.title %></h2>
+        </div>
+        <p class="intro"><%= c.blogSection.intro %></p>
+      </div>
+      <div class="posts">
+        <% c.blog.forEach(function(post){ %>
+          <a class="post" href="<%= href(post.href || '#', c) %>">
+            <div class="thumb" style="background-image: url('<%= post.image %>');"></div>
+            <div class="body">
+              <div class="meta"><%= post.meta %></div>
+              <h4><%= post.title %></h4>
+              <span class="read"><%= post.read || 'Ler nota →' %></span>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="faq">
+    <div class="wrap">
+      <div class="grid">
+        <div>
+          <div class="label"><%= c.faqSection.label %></div>
+          <h2><%= c.faqSection.title %></h2>
+        </div>
+        <div>
+          <% c.faq.forEach(function(qa){ %>
+            <details class="qa" <%= qa.open ? 'open' : '' %>>
+              <summary><%= qa.q %> <span class="plus">+</span></summary>
+              <div class="a"><%= qa.a %></div>
+            </details>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section id="orcamento" class="final">
+    <div class="wrap">
+      <div>
+        <div class="sub"><%= c.finalCta.sub %></div>
+        <h2><%= c.finalCta.title %></h2>
+      </div>
+      <div class="cta-stack">
+        <% c.finalCta.buttons.forEach(function(b){ %>
+          <a class="btn <%= b.style === 'solid' ? 'solid' : '' %>" href="<%= href(b.href, c) %>"><%= b.label %><% if (b.arrow) { %> <span class="arrow">→</span><% } %></a>
+        <% }); %>
+        <% if (c.finalCta.micro) { %><span class="micro"><%= c.finalCta.micro %></span><% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site" id="contato">
+    <div class="wrap">
+      <div class="grid">
+        <div>
+          <a class="brand" href="#" style="margin-bottom:18px; display:inline-block;" aria-label="NORTEND">
+            <img class="logo" src="/assets/logo-nortend.png" alt="NORTEND" style="width: 200px; height:auto;" />
+          </a>
+          <p class="pitch" style="margin-top:8px;"><%= c.footer.pitch %></p>
+        </div>
+        <div>
+          <h5><%= c.footer.navTitle %></h5>
+          <ul>
+            <% c.footer.navLinks.forEach(function(l){ %><li><a href="<%= href(l.href, c) %>"><%= l.label %></a></li><% }); %>
+          </ul>
+        </div>
+        <div>
+          <h5><%= c.footer.contactTitle %></h5>
+          <ul>
+            <% c.footer.contact.forEach(function(item){ %>
+              <li><% if (item.href) { %><a href="<%= href(item.href, c) %>"><%= item.text %></a><% } else { %><%= item.text %><% } %></li>
+            <% }); %>
+          </ul>
+        </div>
+        <div>
+          <h5><%= c.footer.clientTitle %></h5>
+          <ul>
+            <% c.footer.clientLinks.forEach(function(l){ %><li><a href="<%= href(l.href, c) %>"><%= l.label %></a></li><% }); %>
+          </ul>
+        </div>
+      </div>
+      <div class="legal">
+        <span><%= c.footer.legalLeft %></span>
+        <span><%= c.footer.legalRight %></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating WhatsApp -->
+  <a class="wpp" href="<%= whatsappLink(c.whatsapp) %>" target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+    <span class="pulse"></span>
+    <%= c.whatsapp.label %>
+  </a>
+
+</body>
+</html>

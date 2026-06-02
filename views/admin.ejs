@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin · Nortend Engenharia</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/assets/logo-nortend.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<%
+  // ----------------------------------------------------------------
+  // Helpers de renderização do formulário (nomes seguem lib/content.js
+  // e public/js/admin.js: path.dot/bracket; "__bool" para checkboxes;
+  // data-key para que o JS renumere as linhas das listas).
+  // ----------------------------------------------------------------
+  function A(v){ return esc(v == null ? '' : v); }
+  function thumbStyle(v){ return v ? ' style="background-image:url(\'' + String(v).replace(/'/g, "\\'") + '\')"' : ''; }
+
+  // Campos de nível superior (caminho fixo)
+  function tf(label, name, value, hint, type){
+    return '<div class="field"><label>' + esc(label) + '</label>' +
+      '<input type="' + (type || 'text') + '" name="' + name + '" value="' + A(value) + '">' +
+      (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
+  }
+  function tarea(label, name, value, hint){
+    return '<div class="field"><label>' + esc(label) + '</label>' +
+      '<textarea name="' + name + '">' + A(value) + '</textarea>' +
+      (hint ? '<p class="hint">' + hint + '</p>' : '') + '</div>';
+  }
+  function imgTop(label, name, value){
+    return '<div class="field"><label>' + esc(label) + '</label>' +
+      '<div class="img-field" data-field="' + name + '">' +
+        '<div class="thumb"' + thumbStyle(value) + '></div>' +
+        '<div class="img-ctl">' +
+          '<label class="file-btn">Trocar imagem<input type="file" accept="image/*"></label>' +
+          '<input type="hidden" name="' + name + '" value="' + A(value) + '">' +
+          '<p class="img-status">' + (value ? ('Atual · ' + esc(value)) : 'Sem imagem') + '</p>' +
+        '</div></div></div>';
+  }
+
+  // Campos de linha (linha existente): name + data-key
+  function rf(listPath, i, key, value, label, opts){
+    opts = opts || {};
+    var name = listPath + '[' + i + '].' + key;
+    var inner = opts.textarea
+      ? '<textarea name="' + name + '" data-key="' + key + '">' + A(value) + '</textarea>'
+      : '<input type="' + (opts.type || 'text') + '" name="' + name + '" data-key="' + key + '" value="' + A(value) + '">';
+    return '<div><label class="inline-label">' + esc(label) + '</label>' + inner + '</div>';
+  }
+  // Campos de linha (template): apenas data-key (o JS define o name ao clonar)
+  function tfr(key, label, opts){
+    opts = opts || {};
+    var inner = opts.textarea
+      ? '<textarea data-key="' + key + '"></textarea>'
+      : '<input type="' + (opts.type || 'text') + '" data-key="' + key + '">';
+    return '<div><label class="inline-label">' + esc(label) + '</label>' + inner + '</div>';
+  }
+  // Checkbox booleano em linha
+  function rbool(listPath, i, key, checked, label){
+    var name = listPath + '[' + i + '].' + key + '__bool';
+    return '<label class="checkbox-line"><input type="checkbox" name="' + name + '" value="on" data-key="' + key + '" data-bool' + (checked ? ' checked' : '') + '> ' + esc(label) + '</label>';
+  }
+  function tbool(key, label){
+    return '<label class="checkbox-line"><input type="checkbox" value="on" data-key="' + key + '" data-bool> ' + esc(label) + '</label>';
+  }
+  // Imagem em linha
+  function rimg(listPath, i, key, value, extraClass){
+    var name = listPath + '[' + i + '].' + key;
+    return '<div class="img-field' + (extraClass ? ' ' + extraClass : '') + '" data-key="' + key + '" data-field="' + name + '">' +
+      '<div class="thumb"' + thumbStyle(value) + '></div>' +
+      '<div class="img-ctl">' +
+        '<label class="file-btn">Trocar imagem<input type="file" accept="image/*"></label>' +
+        '<input type="hidden" name="' + name + '" value="' + A(value) + '">' +
+        '<p class="img-status">' + (value ? ('Atual · ' + esc(value)) : 'Sem imagem') + '</p>' +
+      '</div></div>';
+  }
+  function timg(key, extraClass){
+    return '<div class="img-field' + (extraClass ? ' ' + extraClass : '') + '" data-key="' + key + '">' +
+      '<div class="thumb"></div>' +
+      '<div class="img-ctl">' +
+        '<label class="file-btn">Enviar imagem<input type="file" accept="image/*"></label>' +
+        '<input type="hidden">' +
+        '<p class="img-status">Sem imagem</p>' +
+      '</div></div>';
+  }
+  // Lista escalar (trustStrip)
+  function rscalar(listPath, i, value){
+    return '<input type="text" name="' + listPath + '[' + i + ']" data-key="" value="' + A(value) + '">';
+  }
+  function n2(i){ return String(i + 1).padStart(2, '0'); }
+%>
+
+<header class="admin-header">
+  <div class="bar">
+    <img class="logo" src="/assets/logo-nortend-light.svg" alt="Nortend" onerror="this.src='/assets/logo-nortend.png'" />
+    <span class="title">Painel de conteúdo</span>
+    <span class="spacer"></span>
+    <a class="btn ghost" href="/" target="_blank" rel="noopener">Ver site →</a>
+    <form method="post" action="/admin/logout" style="display:inline">
+      <button type="submit" class="btn ghost">Sair</button>
+    </form>
+  </div>
+</header>
+
+<div class="admin-wrap" id="topo">
+
+  <% if (saved) { %><div class="alert ok">Conteúdo salvo. As alterações já estão no ar.</div><% } %>
+  <% if (uploaded) { %><div class="alert ok">Imagem atualizada.</div><% } %>
+  <% if (typeof error !== 'undefined' && error) { %><div class="alert err"><%= error %></div><% } %>
+
+  <div class="intro-note">
+    Edite os textos diretamente nos campos e troque imagens pelo botão <strong>Trocar imagem</strong>.
+    Imagens são aplicadas <strong>na hora</strong> do envio. Para textos e ordenação, clique em
+    <strong>Salvar alterações</strong> no rodapé. Tudo entra no ar imediatamente — não é preciso publicar nada manualmente.
+    Use <code>*palavra*</code> nos títulos do Hero e da seção “Em campo” para destacar em itálico.
+  </div>
+
+  <% if (adminProfile) { %>
+    <div class="intro-note">
+      <strong>Administrador</strong> <%= adminProfile.username %> ·
+      <strong>E-mail</strong> <%= adminProfile.email || '—' %> ·
+      <strong>Telefone</strong> <%= adminProfile.phone || '—' %> ·
+      <strong>WhatsApp</strong> <%= adminProfile.whatsapp || '—' %>
+    </div>
+  <% } %>
+
+  <form id="contentForm" method="post" action="/admin/save">
+
+    <!-- ===================== GERAL (SEO + WhatsApp) ===================== -->
+    <details class="sec" id="sec-seo" open>
+      <summary><span class="tag">Geral</span> SEO, WhatsApp e identidade <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Título da página (aba do navegador / Google)', 'seo.title', c.seo.title) %>
+        <%- tarea('Descrição (SEO / compartilhamento)', 'seo.description', c.seo.description) %>
+        <%- imgTop('Imagem de compartilhamento (Open Graph)', 'seo.ogImage', c.seo.ogImage) %>
+        <div class="two-col">
+          <%- tf('WhatsApp — número (só dígitos, com DDI)', 'whatsapp.number', c.whatsapp.number, 'Ex.: <code>5592999998888</code>') %>
+          <%- tf('WhatsApp — rótulo do botão', 'whatsapp.label', c.whatsapp.label) %>
+        </div>
+        <%- tarea('WhatsApp — mensagem inicial', 'whatsapp.message', c.whatsapp.message) %>
+      </div>
+    </details>
+
+    <!-- ===================== TOPBAR ===================== -->
+    <details class="sec" id="sec-topbar">
+      <summary><span class="tag">Topo</span> Barra superior <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <div class="two-col">
+          <%- tf('Disponibilidade', 'topbar.availability', c.topbar.availability) %>
+          <%- tf('Credencial', 'topbar.credential', c.topbar.credential) %>
+        </div>
+        <div class="two-col">
+          <%- tf('Idioma — rótulo', 'topbar.langLabel', c.topbar.langLabel) %>
+          <%- tf('Idioma — link', 'topbar.langUrl', c.topbar.langUrl) %>
+        </div>
+        <div class="two-col">
+          <%- tf('Área do cliente — rótulo', 'topbar.clientAreaLabel', c.topbar.clientAreaLabel) %>
+          <%- tf('Área do cliente — link', 'topbar.clientAreaUrl', c.topbar.clientAreaUrl) %>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== NAV ===================== -->
+    <details class="sec" id="sec-nav">
+      <summary><span class="tag">Menu</span> Navegação <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <div class="field"><label class="field-label">Links do menu</label>
+          <div class="list" data-list="nav.links">
+            <% c.nav.links.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('nav.links', i, 'label', it.label, 'Rótulo') %>
+                  <%- rf('nav.links', i, 'href', it.href, 'Link / âncora') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('label', 'Rótulo') %>
+                  <%- tfr('href', 'Link / âncora') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="nav.links">+ Adicionar link</button></div>
+        </div>
+        <div class="two-col">
+          <%- tf('Botão secundário — rótulo', 'nav.ctaGhost.label', c.nav.ctaGhost.label) %>
+          <%- tf('Botão secundário — link', 'nav.ctaGhost.href', c.nav.ctaGhost.href, 'Use <code>{whatsapp}</code> para o WhatsApp') %>
+        </div>
+        <div class="two-col">
+          <%- tf('Botão principal — rótulo', 'nav.ctaPrimary.label', c.nav.ctaPrimary.label) %>
+          <%- tf('Botão principal — link', 'nav.ctaPrimary.href', c.nav.ctaPrimary.href) %>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== HERO ===================== -->
+    <details class="sec" id="sec-hero">
+      <summary><span class="tag">Abertura</span> Hero <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Eyebrow (linha acima do título)', 'hero.eyebrow', c.hero.eyebrow) %>
+        <%- tf('Título', 'hero.title', c.hero.title, 'Envolva uma palavra em <code>*asteriscos*</code> para destacar em itálico.') %>
+        <%- tarea('Lede (parágrafo de apoio)', 'hero.lede', c.hero.lede) %>
+        <div class="two-col">
+          <%- tf('CTA principal — rótulo', 'hero.ctaPrimary.label', c.hero.ctaPrimary.label) %>
+          <%- tf('CTA principal — link', 'hero.ctaPrimary.href', c.hero.ctaPrimary.href) %>
+        </div>
+        <div class="two-col">
+          <%- tf('CTA secundário — rótulo', 'hero.ctaSecondary.label', c.hero.ctaSecondary.label) %>
+          <%- tf('CTA secundário — link', 'hero.ctaSecondary.href', c.hero.ctaSecondary.href) %>
+        </div>
+
+        <div class="field"><label class="field-label">Specs (linha de destaques)</label>
+          <div class="list" data-list="hero.specs">
+            <% c.hero.specs.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('hero.specs', i, 'k', it.k, 'Rótulo') %>
+                  <%- rf('hero.specs', i, 'v', it.v, 'Valor') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('k', 'Rótulo') %>
+                  <%- tfr('v', 'Valor') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="hero.specs">+ Adicionar spec</button></div>
+        </div>
+
+        <%- imgTop('Imagem do hero', 'hero.image', c.hero.image) %>
+
+        <div class="field"><label class="field-label">Cartão de relatório (sobreposto à imagem)</label>
+          <div class="two-col">
+            <%- tf('ID do relatório', 'hero.card.id', c.hero.card.id) %>
+            <%- tf('Carimbo (ex.: APROVADO)', 'hero.card.stamp', c.hero.card.stamp) %>
+          </div>
+          <%- tf('Título do cartão', 'hero.card.title', c.hero.card.title) %>
+        </div>
+
+        <div class="field"><label class="field-label">Itens do cartão</label>
+          <div class="list" data-list="hero.card.items">
+            <% c.hero.card.items.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('hero.card.items', i, 'text', it.text, 'Texto') %>
+                  <%- rf('hero.card.items', i, 'code', it.code, 'Código / norma') %>
+                </div>
+                <div style="margin-top:8px"><%- rbool('hero.card.items', i, 'on', it.on, 'Marcado (check verde)') %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('text', 'Texto') %>
+                  <%- tfr('code', 'Código / norma') %>
+                </div>
+                <div style="margin-top:8px"><%- tbool('on', 'Marcado (check verde)') %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="hero.card.items">+ Adicionar item</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== TRUST STRIP ===================== -->
+    <details class="sec" id="sec-trustStrip">
+      <summary><span class="tag">Selos</span> Faixa de normas <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <div class="field"><label class="field-label">Itens da faixa (normas, ensaios…)</label>
+          <div class="list" data-list="trustStrip">
+            <% c.trustStrip.forEach(function(v,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <%- rscalar('trustStrip', i, v) %>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <input type="text" data-key="">
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="trustStrip">+ Adicionar item</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== METRICS ===================== -->
+    <details class="sec" id="sec-metricsSection">
+      <summary><span class="tag">01</span> Métricas <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'metricsSection.label', c.metricsSection.label) %>
+        <%- tf('Título da seção', 'metricsSection.title', c.metricsSection.title) %>
+        <%- tarea('Intro da seção', 'metricsSection.intro', c.metricsSection.intro) %>
+        <div class="field"><label class="field-label">Números</label>
+          <div class="list" data-list="metrics">
+            <% c.metrics.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-3">
+                  <%- rf('metrics', i, 'n', it.n, 'Número') %>
+                  <%- rf('metrics', i, 'sup', it.sup, 'Sobrescrito (+, %…)') %>
+                  <%- rf('metrics', i, 'l', it.l, 'Legenda') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-3">
+                  <%- tfr('n', 'Número') %>
+                  <%- tfr('sup', 'Sobrescrito (+, %…)') %>
+                  <%- tfr('l', 'Legenda') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="metrics">+ Adicionar métrica</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== SERVICES ===================== -->
+    <details class="sec" id="sec-services">
+      <summary><span class="tag">02</span> Serviços <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'servicesSection.label', c.servicesSection.label) %>
+        <%- tf('Título da seção', 'servicesSection.title', c.servicesSection.title) %>
+        <%- tarea('Intro da seção', 'servicesSection.intro', c.servicesSection.intro) %>
+        <div class="field"><label class="field-label">Cards de serviço</label>
+          <div class="list" data-list="services">
+            <% c.services.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('services', i, 'code', it.code, 'Código (SVC · 01)') %>
+                  <%- rf('services', i, 'title', it.title, 'Título') %>
+                </div>
+                <div class="row-grid"><%- rf('services', i, 'text', it.text, 'Descrição', {textarea:true}) %></div>
+                <div class="row-grid cols-2">
+                  <%- rf('services', i, 'more', it.more, 'Texto do link') %>
+                  <%- rf('services', i, 'href', it.href, 'Link') %>
+                </div>
+                <div style="margin-top:6px"><label class="inline-label">Imagem</label><%- rimg('services', i, 'image', it.image) %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('code', 'Código (SVC · 01)') %>
+                  <%- tfr('title', 'Título') %>
+                </div>
+                <div class="row-grid"><%- tfr('text', 'Descrição', {textarea:true}) %></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('more', 'Texto do link') %>
+                  <%- tfr('href', 'Link') %>
+                </div>
+                <div style="margin-top:6px"><label class="inline-label">Imagem</label><%- timg('image') %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="services">+ Adicionar serviço</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== FIELD (Em campo) ===================== -->
+    <details class="sec" id="sec-field">
+      <summary><span class="tag">Campo</span> Em campo <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo', 'field.label', c.field.label) %>
+        <%- tf('Título', 'field.title', c.field.title, 'Use <code>*asteriscos*</code> para destacar em itálico.') %>
+        <%- tarea('Texto', 'field.text', c.field.text) %>
+        <%- imgTop('Imagem (full-bleed)', 'field.image', c.field.image) %>
+        <div class="field"><label class="field-label">Estatísticas</label>
+          <div class="list" data-list="field.stats">
+            <% c.field.stats.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('field.stats', i, 'k', it.k, 'Rótulo') %>
+                  <%- rf('field.stats', i, 'v', it.v, 'Valor') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('k', 'Rótulo') %>
+                  <%- tfr('v', 'Valor') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="field.stats">+ Adicionar</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== PROCESS ===================== -->
+    <details class="sec" id="sec-process">
+      <summary><span class="tag">03</span> Processo <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'processSection.label', c.processSection.label) %>
+        <%- tf('Título da seção', 'processSection.title', c.processSection.title) %>
+        <%- tarea('Intro da seção', 'processSection.intro', c.processSection.intro) %>
+        <div class="field"><label class="field-label">Etapas</label>
+          <div class="list" data-list="process">
+            <% c.process.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('process', i, 'num', it.num, 'Número (01)') %>
+                  <%- rf('process', i, 'title', it.title, 'Título') %>
+                </div>
+                <div class="row-grid"><%- rf('process', i, 'text', it.text, 'Texto', {textarea:true}) %></div>
+                <div class="row-grid"><%- rf('process', i, 'deliver', it.deliver, 'Entregável') %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('num', 'Número (01)') %>
+                  <%- tfr('title', 'Título') %>
+                </div>
+                <div class="row-grid"><%- tfr('text', 'Texto', {textarea:true}) %></div>
+                <div class="row-grid"><%- tfr('deliver', 'Entregável') %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="process">+ Adicionar etapa</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== DIFFERENTIALS ===================== -->
+    <details class="sec" id="sec-diffSection">
+      <summary><span class="tag">04</span> Diferenciais <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'diffSection.label', c.diffSection.label) %>
+        <%- tf('Título da seção', 'diffSection.title', c.diffSection.title) %>
+        <%- tarea('Intro da seção', 'diffSection.intro', c.diffSection.intro) %>
+        <div class="field"><label class="field-label">Itens</label>
+          <div class="list" data-list="differentials">
+            <% c.differentials.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('differentials', i, 'k', it.k, 'Código (D · 01)') %>
+                  <%- rf('differentials', i, 'title', it.title, 'Título') %>
+                </div>
+                <div class="row-grid"><%- rf('differentials', i, 'text', it.text, 'Texto', {textarea:true}) %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('k', 'Código (D · 01)') %>
+                  <%- tfr('title', 'Título') %>
+                </div>
+                <div class="row-grid"><%- tfr('text', 'Texto', {textarea:true}) %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="differentials">+ Adicionar diferencial</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== PROOF ===================== -->
+    <details class="sec" id="sec-proof">
+      <summary><span class="tag">05</span> Prova social <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'proofSection.label', c.proofSection.label) %>
+        <%- tf('Título da seção', 'proofSection.title', c.proofSection.title) %>
+        <%- tarea('Intro da seção', 'proofSection.intro', c.proofSection.intro) %>
+        <%- tarea('Depoimento', 'proof.quote', c.proof.quote) %>
+        <%- tf('Atribuição', 'proof.attribution', c.proof.attribution) %>
+        <div class="field"><label class="field-label">Logos de clientes</label>
+          <div class="list" data-list="proof.logos">
+            <% c.proof.logos.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid">
+                  <div>
+                    <label class="inline-label">Tipo</label>
+                    <select name="proof.logos[<%= i %>].type" data-key="type" data-logo-type>
+                      <option value="text"<%= it.type !== 'image' ? ' selected' : '' %>>Texto (placeholder)</option>
+                      <option value="image"<%= it.type === 'image' ? ' selected' : '' %>>Imagem</option>
+                    </select>
+                  </div>
+                  <div class="logo-text"><%- rf('proof.logos', i, 'value', it.value, 'Texto do logo') %></div>
+                  <%- rimg('proof.logos', i, 'img', it.img, 'logo-image') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid">
+                  <div>
+                    <label class="inline-label">Tipo</label>
+                    <select data-key="type" data-logo-type>
+                      <option value="text">Texto (placeholder)</option>
+                      <option value="image">Imagem</option>
+                    </select>
+                  </div>
+                  <div class="logo-text"><%- tfr('value', 'Texto do logo') %></div>
+                  <%- timg('img', 'logo-image') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="proof.logos">+ Adicionar logo</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== BLOG ===================== -->
+    <details class="sec" id="sec-blog">
+      <summary><span class="tag">06</span> Blog <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'blogSection.label', c.blogSection.label) %>
+        <%- tf('Título da seção', 'blogSection.title', c.blogSection.title) %>
+        <%- tarea('Intro da seção', 'blogSection.intro', c.blogSection.intro) %>
+        <div class="field"><label class="field-label">Posts</label>
+          <div class="list" data-list="blog">
+            <% c.blog.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('blog', i, 'meta', it.meta, 'Meta (NR-13 · 6 min)') %>
+                  <%- rf('blog', i, 'read', it.read, 'Texto do link') %>
+                </div>
+                <div class="row-grid"><%- rf('blog', i, 'title', it.title, 'Título', {textarea:true}) %></div>
+                <div class="row-grid"><%- rf('blog', i, 'href', it.href, 'Link') %></div>
+                <div style="margin-top:6px"><label class="inline-label">Imagem</label><%- rimg('blog', i, 'image', it.image) %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('meta', 'Meta (NR-13 · 6 min)') %>
+                  <%- tfr('read', 'Texto do link') %>
+                </div>
+                <div class="row-grid"><%- tfr('title', 'Título', {textarea:true}) %></div>
+                <div class="row-grid"><%- tfr('href', 'Link') %></div>
+                <div style="margin-top:6px"><label class="inline-label">Imagem</label><%- timg('image') %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="blog">+ Adicionar post</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== FAQ ===================== -->
+    <details class="sec" id="sec-faq">
+      <summary><span class="tag">07</span> Perguntas frequentes <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Rótulo da seção', 'faqSection.label', c.faqSection.label) %>
+        <%- tf('Título da seção', 'faqSection.title', c.faqSection.title) %>
+        <div class="field"><label class="field-label">Perguntas</label>
+          <div class="list" data-list="faq">
+            <% c.faq.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid"><%- rf('faq', i, 'q', it.q, 'Pergunta') %></div>
+                <div class="row-grid"><%- rf('faq', i, 'a', it.a, 'Resposta', {textarea:true}) %></div>
+                <div style="margin-top:8px"><%- rbool('faq', i, 'open', it.open, 'Aberta por padrão') %></div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid"><%- tfr('q', 'Pergunta') %></div>
+                <div class="row-grid"><%- tfr('a', 'Resposta', {textarea:true}) %></div>
+                <div style="margin-top:8px"><%- tbool('open', 'Aberta por padrão') %></div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="faq">+ Adicionar pergunta</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== FINAL CTA ===================== -->
+    <details class="sec" id="sec-finalCta">
+      <summary><span class="tag">08</span> Chamada final <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tf('Subtítulo (eyebrow)', 'finalCta.sub', c.finalCta.sub) %>
+        <%- tarea('Título', 'finalCta.title', c.finalCta.title) %>
+        <%- tf('Microcopy (linha pequena)', 'finalCta.micro', c.finalCta.micro) %>
+        <div class="field"><label class="field-label">Botões</label>
+          <div class="list" data-list="finalCta.buttons">
+            <% c.finalCta.buttons.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('finalCta.buttons', i, 'label', it.label, 'Rótulo') %>
+                  <%- rf('finalCta.buttons', i, 'href', it.href, 'Link ( {whatsapp} suportado )') %>
+                </div>
+                <div class="row-grid cols-2">
+                  <div>
+                    <label class="inline-label">Estilo</label>
+                    <select name="finalCta.buttons[<%= i %>].style" data-key="style">
+                      <option value="solid"<%= it.style !== 'outline' ? ' selected' : '' %>>Sólido</option>
+                      <option value="outline"<%= it.style === 'outline' ? ' selected' : '' %>>Contorno</option>
+                    </select>
+                  </div>
+                  <div style="display:flex;align-items:flex-end"><%- rbool('finalCta.buttons', i, 'arrow', it.arrow, 'Mostrar seta →') %></div>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('label', 'Rótulo') %>
+                  <%- tfr('href', 'Link ( {whatsapp} suportado )') %>
+                </div>
+                <div class="row-grid cols-2">
+                  <div>
+                    <label class="inline-label">Estilo</label>
+                    <select data-key="style">
+                      <option value="solid">Sólido</option>
+                      <option value="outline">Contorno</option>
+                    </select>
+                  </div>
+                  <div style="display:flex;align-items:flex-end"><%- tbool('arrow', 'Mostrar seta →') %></div>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="finalCta.buttons">+ Adicionar botão</button></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ===================== FOOTER ===================== -->
+    <details class="sec" id="sec-footer">
+      <summary><span class="tag">Rodapé</span> Footer <span class="chev">›</span></summary>
+      <div class="sec-body">
+        <%- tarea('Pitch (texto da coluna principal)', 'footer.pitch', c.footer.pitch) %>
+        <%- tf('Legal — esquerda', 'footer.legalLeft', c.footer.legalLeft) %>
+        <%- tf('Legal — direita (CNPJ / CREA)', 'footer.legalRight', c.footer.legalRight) %>
+
+        <%- tf('Título — coluna Navegar', 'footer.navTitle', c.footer.navTitle) %>
+        <div class="field"><label class="field-label">Links — Navegar</label>
+          <div class="list" data-list="footer.navLinks">
+            <% c.footer.navLinks.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('footer.navLinks', i, 'label', it.label, 'Rótulo') %>
+                  <%- rf('footer.navLinks', i, 'href', it.href, 'Link') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('label', 'Rótulo') %>
+                  <%- tfr('href', 'Link') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="footer.navLinks">+ Adicionar</button></div>
+        </div>
+
+        <%- tf('Título — coluna Contato', 'footer.contactTitle', c.footer.contactTitle) %>
+        <div class="field"><label class="field-label">Itens de contato</label>
+          <div class="list" data-list="footer.contact">
+            <% c.footer.contact.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('footer.contact', i, 'text', it.text, 'Texto') %>
+                  <%- rf('footer.contact', i, 'href', it.href, 'Link (mailto:, tel: ou vazio)') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('text', 'Texto') %>
+                  <%- tfr('href', 'Link (mailto:, tel: ou vazio)') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="footer.contact">+ Adicionar</button></div>
+        </div>
+
+        <%- tf('Título — coluna Cliente', 'footer.clientTitle', c.footer.clientTitle) %>
+        <div class="field"><label class="field-label">Links — Cliente</label>
+          <div class="list" data-list="footer.clientLinks">
+            <% c.footer.clientLinks.forEach(function(it,i){ %>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num"><%= n2(i) %></span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- rf('footer.clientLinks', i, 'label', it.label, 'Rótulo') %>
+                  <%- rf('footer.clientLinks', i, 'href', it.href, 'Link') %>
+                </div>
+              </div>
+            <% }); %>
+            <template>
+              <div class="list-row">
+                <div class="row-head"><span class="row-num">00</span><button type="button" class="btn small danger row-remove">Remover</button></div>
+                <div class="row-grid cols-2">
+                  <%- tfr('label', 'Rótulo') %>
+                  <%- tfr('href', 'Link') %>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="list-actions"><button type="button" class="btn small ghost" data-add="footer.clientLinks">+ Adicionar</button></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="savebar">
+      <span class="note">Textos entram no ar ao salvar · imagens, ao enviar</span>
+      <a class="btn ghost" href="#topo">▲ Topo</a>
+      <button type="submit" class="btn primary">Salvar alterações</button>
+    </div>
+
+  </form>
+</div>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>

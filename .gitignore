@@ -1,0 +1,20 @@
+# Dependências
+node_modules/
+
+# Ambiente / segredos
+.env
+
+# Conteúdo de produção (editado pelo admin — NÃO versionar; fazer backup à parte)
+data/content.json
+data/content.backup.json
+data/*.tmp
+data/*.sqlite
+
+# Imagens enviadas pelo admin (backup à parte)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs / sistema
+*.log
+npm-debug.log*
+.DS_Store
