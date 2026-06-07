@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "name": "nortend-site",
   "version": "1.0.0",
   "private": true,
@@ -23,34 +22,5 @@
     "express-session": "^1.18.0",
     "multer": "^1.4.5-lts.1",
     "sqlite3": "^5.1.7"
-=======
-  "name": "nr13-site",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "gray-matter": "^4.0.3",
-    "next": "16.2.6",
-    "next-mdx-remote": "^6.0.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@tailwindcss/typography": "^0.5.19",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
->>>>>>> 30bf422fb58ed81160b27ef762ea8714dbec7c26
   }
 }
